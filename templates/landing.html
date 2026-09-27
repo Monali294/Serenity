@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Serenity — Your Personal Wellness Companion</title>
+  <meta name="description" content="Serenity helps you check in, reflect, and grow with mood tracking, journaling, habit tracking, and a calm space to breathe.">
+
+  <!-- Bootstrap 5 (grid + a few utilities only; visual identity is custom) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Landing page styles — independent of the project's global style.css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+
+  <!-- Applies saved theme before first paint, so there is no light/dark flash -->
+  <script>
+    (function () {
+      var saved = localStorage.getItem('serenity-theme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ==================== ANIMATED BACKGROUND (fixed, behind everything) ==================== -->
+  <div class="bg-scene" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- ==================== NAVBAR ==================== -->
+  <nav class="serenity-nav" id="serenityNav">
+    <div class="container-serenity">
+      <div class="nav-inner">
+        <a href="#home" class="serenity-logo">
+          <span class="logo-leaf">🌿</span> Serenity
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#features">Features</a></li>
+          <!-- Assumes an existing Flask endpoint named 'login' -->
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></svg>
+          </button>
+
+          <!-- Assumes an existing Flask endpoint named 'login' -->
+          <a href="{{ url_for('login') }}" class="btn-serenity btn-outline-small login-link">Login</a>
+
+          <!-- Assumes an existing Flask endpoint named 'register' -->
+          <a href="{{ url_for('register') }}" class="btn-serenity btn-glow">Get Started</a>
+
+          <button class="nav-toggle-btn" id="navToggleBtn" type="button" aria-label="Open menu" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile nav panel -->
+      <div class="mobile-nav-panel" id="mobileNavPanel">
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <!-- Assumes an existing Flask endpoint named 'login' -->
+        <a href="{{ url_for('login') }}">Login</a>
+        <!-- Assumes an existing Flask endpoint named 'register' -->
+        <a href="{{ url_for('register') }}">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== HERO ==================== -->
+  <header class="hero-serenity" id="home">
+    <div class="container-serenity hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow-pill reveal">A quieter place for your mind</span>
+
+        <h1 class="reveal">Your wellbeing, gently tracked and truly understood.</h1>
+
+        <p class="lede reveal">
+          Serenity is a personal wellness companion that helps you check in with your mood, sleep, habits, and thoughts — then turns those small daily moments into meaningful insight.
+        </p>
+
+        <div class="hero-actions reveal">
+          <!-- Assumes an existing Flask endpoint named 'register' -->
+          <a href="{{ url_for('register') }}" class="btn-serenity btn-glow">Get Started</a>
+          <a href="#about" class="btn-serenity btn-soft">Explore Serenity</a>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="orb-wrap" aria-hidden="true">
+          <div class="orb-core-wrap">
+            <span class="orb-ring r1"></span>
+            <span class="orb-ring r2"></span>
+            <span class="orb-ring r3"></span>
+            <span class="orb-core"></span>
+          </div>
+          <span class="breath-label" id="breathLabel">Breathe In</span>
+
+          <span class="float-chip chip-1">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.6-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.4-9.5 9-9.5 9Z"/></svg>
+          </span>
+          <span class="float-chip chip-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10a4 4 0 0 0-3.9-4A5 5 0 0 0 5 8a3.5 3.5 0 0 0 .5 7H18a3 3 0 0 0 0-6Z"/></svg>
+          </span>
+          <span class="float-chip chip-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C7 2 3 6 3 11c0 5.5 4.5 10 9 11 4.5-1 9-5.5 9-11 0-5-4-9-9-9Z"/></svg>
+          </span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== ABOUT / FEATURES ==================== -->
+  <section id="about">
+    <div class="container-serenity">
+      <div class="section-head">
+        <span class="eyebrow-pill reveal">What's inside</span>
+        <h2 class="reveal">Everything you need to understand yourself</h2>
+        <p class="reveal">Serenity brings your mood, sleep, habits, journaling, and calming activities into one peaceful space.</p>
+      </div>
+
+      <div class="features-grid" id="features">
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5s1.5 2 3.5 2 3.5-2 3.5-2M9 9.5h.01M15 9.5h.01"/></svg>
+          </div>
+          <h3>Mood Tracking</h3>
+          <p>Track daily moods and observe the patterns that emerge over time.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+          </div>
+          <h3>Sleep Tracking</h3>
+          <p>Record your rest and understand how it relates to mood and energy.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h3>Habit Tracking</h3>
+          <p>Build consistent routines without focusing on perfection.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+          </div>
+          <h3>Journaling</h3>
+          <p>Write private reflections and understand emotional patterns.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4 12H2M22 12h-2"/></svg>
+          </div>
+          <h3>Calm Corner</h3>
+          <p>Breathing exercises, grounding activities, and calming sounds.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M4 12H2M22 12h-2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+          </div>
+          <h3>AI Companion</h3>
+          <p>A supportive companion for reflection and everyday conversation.</p>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l3.5-4.5L14 14l4-6"/></svg>
+          </div>
+          <h3>Personal Insights</h3>
+          <p>Visualize your wellness patterns and receive useful guidance.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== HOW SERENITY WORKS ==================== -->
+  <section id="how-it-works">
+    <div class="container-serenity">
+      <div class="section-head">
+        <span class="eyebrow-pill reveal">How it works</span>
+        <h2 class="reveal">A simple rhythm, day after day</h2>
+        <p class="reveal">Four small steps that turn daily moments into real self-understanding.</p>
+      </div>
+
+      <div class="flow-grid">
+        <div class="flow-step reveal">
+          <span class="flow-index">1</span>
+          <h3>Check in</h3>
+          <p>Record your mood, sleep, habits, or a quick journal entry.</p>
+        </div>
+        <div class="flow-step reveal">
+          <span class="flow-index">2</span>
+          <h3>Reflect</h3>
+          <p>Use journaling, Calm Corner, or your AI Companion.</p>
+        </div>
+        <div class="flow-step reveal">
+          <span class="flow-index">3</span>
+          <h3>Understand</h3>
+          <p>View your patterns and wellness insights, laid out clearly.</p>
+        </div>
+        <div class="flow-step reveal">
+          <span class="flow-index">4</span>
+          <h3>Grow</h3>
+          <p>Build healthier, more consistent routines over time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PRIVACY ==================== -->
+  <section id="privacy">
+    <div class="container-serenity">
+      <div class="privacy-block reveal">
+        <div class="privacy-badge-wrap">
+          <div class="privacy-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4Z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+        </div>
+        <div>
+          <span class="eyebrow-pill">Privacy, handled thoughtfully</span>
+          <h2 style="margin-top:14px;">Your reflections stay yours</h2>
+          <p style="margin-top:14px;">What you write and track in Serenity is personal, so it's treated that way. Your entries are tied to your account and only used to power the features you choose to use.</p>
+          <ul class="privacy-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Entries are associated with your account, not shared publicly or with other users.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Reasonable technical and access safeguards help protect your information.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>You can review, edit, or delete your own entries where supported.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FINAL CTA ==================== -->
+  <section id="cta">
+    <div class="container-serenity">
+      <div class="cta-box reveal">
+        <h2>Start understanding yourself, one check-in at a time.</h2>
+        <p>Serenity provides a calmer way to check in, reflect, and understand your daily wellbeing.</p>
+        <!-- Assumes an existing Flask endpoint named 'register' -->
+        <a href="{{ url_for('register') }}" class="btn-serenity">Get Started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="serenity-footer">
+    <div class="container-serenity">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#home" class="serenity-logo">
+            <span class="logo-leaf">🌿</span> Serenity
+          </a>
+          <p>A personal wellness companion for checking in, reflecting, and gently understanding yourself.</p>
+        </div>
+
+        <ul class="footer-links">
+          <li><a href="#home">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#features">Features</a></li>
+          <!-- Assumes an existing Flask endpoint named 'login' -->
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-bottom">
+        &copy; <span id="footerYear">2026</span> Serenity. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Companion | Serenity</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Fonts: Poppins (display) + Inter (body) — same pairing as the rest of Serenity -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Serenity AI Companion Styles — no dependency on style.css;
+     dashboard.css supplies the shared navbar -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_companion.css') }}">
+
+<!-- Applies saved theme before first paint, so there is no light/dark flash -->
+<script>
+  (function () {
+    var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- ============================= -->
+<!-- NAVBAR (shared across Serenity app, same structure as Sleep/Habit Tracker) -->
+<!-- ============================= -->
+<nav class="navbar serenity-nav scrolled" id="mainNav">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand serenity-logo" href="{{ url_for('dashboard') }}">
+            <span class="logo-leaf">🌿</span> Serenity
+        </a>
+
+        <div class="nav-actions ms-auto">
+            <button class="sr-notif-btn" id="notifBtn" aria-label="Notifications">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notif-badge">3</span>
+            </button>
+
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+
+            <a href="{{ url_for('dashboard') }}" class="back-btn-nav" title="Back to Dashboard">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Dashboard</span>
+            </a>
+        </div>
+
+    </div>
+</nav>
+
+{# ============================================================
+   FLASK/JINJA DATA CONTRACT
+   - conversations: list of the user's past chats for the sidebar,
+       e.g. { id, title, updated_at } — newest first.
+   - active_conversation_id: id of the conversation currently
+       loaded (None/omit for a fresh, unsaved "New Chat").
+   - active_conversation_title: title shown in the chat header
+       for the active conversation (omit to default to "AI Companion").
+   - messages: list of messages belonging to the active
+       conversation, e.g. { role: 'user'|'assistant', content, created_at }.
+   Defaults below let this page render standalone before these
+   are wired up to companion_conversations / companion_messages.
+   ============================================================ #}
+{% set conversations = conversations if conversations is defined else [] %}
+{% set active_conversation_id = active_conversation_id if active_conversation_id is defined else none %}
+{% set active_conversation_title = active_conversation_title if active_conversation_title is defined else 'AI Companion' %}
+{% set messages = messages if messages is defined else [] %}
+
+<!-- Mobile sidebar backdrop -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<div class="companion-layout">
+
+  <!-- ============================= -->
+  <!-- SIDEBAR — chat history -->
+  <!-- ============================= -->
+  <aside class="companion-sidebar" id="companionSidebar">
+    <div class="sidebar-header">
+      <button type="button" class="btn-new-chat" id="newChatBtn">
+        <i class="fa-solid fa-plus"></i> <span>New Chat</span>
+      </button>
+    </div>
+
+    <p class="sidebar-label">Previous Conversations</p>
+
+    <div class="sidebar-scroll" id="conversationList">
+      {% for convo in conversations %}
+      <button type="button"
+              class="convo-item {% if convo.id == active_conversation_id %}active{% endif %}"
+              data-conversation-id="{{ convo.id }}">
+        <i class="fa-regular fa-message convo-icon" aria-hidden="true"></i>
+        <span class="convo-text">{{ convo.title }}</span>
+        <span class="convo-delete-btn" role="button" tabindex="0" aria-label="Delete conversation: {{ convo.title }}">
+          <i class="fa-regular fa-trash-can"></i>
+        </span>
+      </button>
+      {% else %}
+      <p class="sidebar-empty" id="sidebarEmptyMsg">No conversations yet — start one below.</p>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <!-- ============================= -->
+  <!-- MAIN CHAT COLUMN -->
+  <!-- ============================= -->
+  <main class="companion-main">
+
+    <div class="chat-topbar">
+      <div class="chat-topbar-title">
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle conversation list">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="avatar-orb" aria-hidden="true">✨</span>
+        <h1 id="chatTitle">{{ active_conversation_title }}</h1>
+      </div>
+
+      <label class="voice-mode-toggle" for="voiceModeSwitch">
+        <span class="voice-label">Auto-speak replies</span>
+        <button type="button" class="voice-switch" id="voiceModeSwitch" role="switch" aria-checked="false" aria-label="Auto-speak replies"></button>
+      </label>
+    </div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-inner" id="chatInner">
+
+        {% if not messages %}
+        <div class="chat-welcome" id="chatWelcome">
+          <div class="welcome-orb" aria-hidden="true">🌿</div>
+          <h2>Hi, I'm here for you.</h2>
+          <p>Talk or type — whatever's on your mind. This is a calm, judgment-free space just for you.</p>
+          <div class="welcome-suggestions">
+            <button type="button" class="suggestion-chip">I'm feeling a bit anxious today</button>
+            <button type="button" class="suggestion-chip">Help me plan a calming evening</button>
+            <button type="button" class="suggestion-chip">I just want to vent for a minute</button>
+          </div>
+        </div>
+        {% endif %}
+
+        {% for msg in messages %}
+        <div class="msg-row msg-{{ msg.role }}" data-role="{{ msg.role }}">
+          <div class="msg-avatar" aria-hidden="true">
+            {% if msg.role == 'assistant' %}✨{% else %}<i class="fa-solid fa-user"></i>{% endif %}
+          </div>
+          <div class="msg-bubble-wrap">
+            <div class="msg-bubble"><span class="msg-text">{{ msg.content }}</span></div>
+            <div class="msg-actions">
+              <button type="button" class="msg-action-btn msg-copy-btn" aria-label="Copy message">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+              {% if msg.role == 'assistant' %}
+              <button type="button" class="msg-action-btn msg-speak-btn" aria-label="Read this message aloud">
+                <i class="fa-solid fa-volume-high"></i>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+      </div>
+    </div>
+
+    <div class="chat-input-bar">
+      <div class="chat-input-inner">
+
+        <div class="voice-live-indicator" id="voiceLiveIndicator" hidden>
+          <span class="voice-live-dot"></span>
+          <span id="voiceLiveText">Listening…</span>
+        </div>
+
+        <div class="chat-input-wrap">
+          <textarea
+            id="chatInput"
+            class="chat-textarea"
+            rows="1"
+            placeholder="Message your AI Companion…"
+            aria-label="Message your AI Companion"
+          ></textarea>
+
+          <button type="button" class="input-action-btn mic-btn" id="micBtn" aria-label="Voice input" title="Voice input">
+            <i class="fa-solid fa-microphone"></i>
+          </button>
+
+          <button type="button" class="input-action-btn send-btn" id="sendBtn" aria-label="Send message" disabled>
+            <i class="fa-solid fa-arrow-up"></i>
+          </button>
+        </div>
+
+        <p class="input-hint">Serenity's AI Companion offers supportive conversation, not medical advice.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ============================= -->
+<!-- DELETE CONFIRMATION MODAL -->
+<!-- ============================= -->
+<div class="companion-modal-overlay" id="companionModalOverlay" hidden>
+  <div class="companion-modal" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle" aria-describedby="companionModalDesc">
+    <h3 id="companionModalTitle">Delete this conversation?</h3>
+    <p id="companionModalDesc">This chat and its messages will be permanently removed.</p>
+    <div class="companion-modal-actions">
+      <button type="button" id="companionModalCancel">Keep it</button>
+      <button type="button" id="companionModalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- TOAST CONTAINER -->
+<!-- ============================= -->
+<div class="serenity-toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Serenity AI Companion Script — fully self-contained, no dependency on script.js -->
+<script src="{{ url_for('static', filename='js/ai_companion.js') }}"></script>
+</body>
+</html>

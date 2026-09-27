@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ journal[1] }} · Serenity Journal</title>
+
+  <!-- Font Awesome (icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Editorial serif for the journal title/body — pairs with the app's
+       existing sans-serif UI font for a "written page vs. interface" feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Page-specific styles — fully self-contained, no dependency on style.css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/journal_detail.css') }}">
+
+  <!-- Applies saved theme before first paint, so there is no light/dark flash -->
+  <script>
+    (function () {
+      document.documentElement.classList.remove('no-js');
+      var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ============================================================
+       NAVBAR — untouched structure/classes/IDs. Right-alignment of
+       theme toggle + logout is handled in journal_detail.css only.
+       ============================================================ -->
+  <nav class="navbar serenity-nav scrolled" id="mainNav">
+    <div class="serenity-logo">🌿 Serenity</div>
+
+    <div class="sr-nav-actions">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark theme">
+        <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        <i class="fa-solid fa-sun" aria-hidden="true"></i>
+      </button>
+
+      <a href="{{ url_for('logout') }}" class="logout-btn">
+        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Logout
+      </a>
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       JOURNAL DETAIL PAGE
+       data-mood drives the accent color via CSS only — the raw
+       {{ journal[4] }} value is still rendered unmodified below.
+       ============================================================ -->
+  <main class="jd-page" data-mood="{{ journal[4] | lower | trim }}">
+
+    <!-- Ambient background — subtle, mood-tinted -->
+    <div class="jd-blob jd-blob-1" aria-hidden="true"></div>
+    <div class="jd-blob jd-blob-2" aria-hidden="true"></div>
+
+    <a href="{{ url_for('journal') }}" class="jd-back-link">
+      <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+      <span>Back to Journal</span>
+    </a>
+
+    <div class="jd-layout">
+
+      <!-- ---------- Main column: the entry itself, open page style ---------- -->
+      <article class="jd-entry jd-reveal">
+        <div class="jd-meta">
+          <span class="jd-mood-dot" aria-hidden="true"></span>
+          <span class="jd-meta-item jd-meta-emotion">{{ journal[4] }}</span>
+          <span class="jd-meta-sep" aria-hidden="true">·</span>
+          <span class="jd-meta-item">{{ journal[3] }}</span>
+          <span class="jd-meta-sep" aria-hidden="true">·</span>
+          <time class="jd-meta-item jd-meta-date">{{ journal[6] }}</time>
+        </div>
+
+        <h1 class="jd-title">{{ journal[1] }}</h1>
+
+        <p class="jd-body">{{ journal[2] }}</p>
+      </article>
+
+      <!-- ---------- Sidebar: AI reflection + actions ---------- -->
+      <aside class="jd-sidebar">
+
+        <section class="jd-ai jd-reveal" aria-labelledby="jdAiHeading">
+          <div class="jd-ai-glow" aria-hidden="true"></div>
+          <h2 class="jd-ai-heading" id="jdAiHeading">✨ Serenity AI Reflection</h2>
+
+          {% if journal[5] %}
+            <p class="jd-ai-text">{{ journal[5] }}</p>
+          {% else %}
+            <p class="jd-ai-text jd-ai-empty">AI analysis will appear here after your journal is analyzed.</p>
+          {% endif %}
+        </section>
+
+        <section class="jd-actions jd-reveal" aria-label="Journal actions">
+          <a href="{{ url_for('edit_journal', journal_id=journal[0]) }}" class="jd-btn jd-btn-primary">
+            <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit Journal
+          </a>
+
+          <form action="{{ url_for('delete_journal', journal_id=journal[0]) }}" method="POST"
+                class="jd-delete-form" id="jdDeleteForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="button" class="jd-btn jd-btn-quiet-danger" id="jdDeleteTrigger"
+                    aria-haspopup="dialog" aria-controls="jdModalOverlay">
+              <i class="fa-regular fa-trash-can" aria-hidden="true"></i> Delete Entry
+            </button>
+          </form>
+        </section>
+
+      </aside>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       DELETE CONFIRMATION MODAL — softened tone, same real form
+       ============================================================ -->
+  <div class="jd-modal-overlay" id="jdModalOverlay" hidden>
+    <div class="jd-modal"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="jdModalTitle"
+         aria-describedby="jdModalDesc">
+      <h3 id="jdModalTitle">Remove this entry?</h3>
+      <p id="jdModalDesc">You can always write a new one — but this one will be gone for good.</p>
+      <div class="jd-modal-actions">
+        <button type="button" class="jd-btn jd-btn-ghost" id="jdModalCancel">Keep it</button>
+        <button type="button" class="jd-btn jd-btn-quiet-danger" id="jdModalConfirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page interactions (reveal animation, delete modal, theme toggle) —
+       fully self-contained, no dependency on script.js -->
+  <script src="{{ url_for('static', filename='js/journal_detail.js') }}"></script>
+</body>
+</html>

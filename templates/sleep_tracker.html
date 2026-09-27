@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sleep Tracker | Serenity</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Fonts: Poppins (display) + Inter (body) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Serenity Sleep Tracker Styles — style.css dependency removed;
+     dashboard.css already supplies the shared navbar + tokens -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sleep_tracker.css') }}">
+
+<!-- Applies saved theme before first paint, so there is no light/dark flash -->
+<script>
+  (function () {
+    var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- ============================= -->
+<!-- NAVBAR (shared across Serenity app) -->
+<!-- ============================= -->
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar serenity-nav scrolled" id="mainNav"> 
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand serenity-logo" href="{{ url_for('dashboard') }}">
+            <span class="logo-leaf">🌿</span> Serenity
+        </a>
+
+        <div class="nav-actions ms-auto">
+            <!-- Notification -->
+            <button class="sr-notif-btn" id="notifBtn" aria-label="Notifications">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notif-badge">3</span>
+            </button>
+
+            <!-- Theme -->
+            <button class="theme-toggle" id="themeToggle"
+                aria-label="Toggle dark mode"
+                title="Toggle theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+
+            <!-- Back to Dashboard -->
+            <a href="{{ url_for('dashboard') }}"
+               class="back-btn-nav"
+               title="Back to Dashboard">
+
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Dashboard</span>
+
+            </a>
+
+        </div>
+
+    </div>
+</nav>
+
+<!-- ============================= -->
+<!-- MAIN CONTENT -->
+<!-- ============================= -->
+<main class="serenity-main">
+
+  <!-- Hero Section -->
+  <section class="hero-section reveal" data-reveal>
+    <div class="hero-icon" aria-hidden="true">😴</div>
+    <h1 class="hero-title">Sleep Tracker</h1>
+    <p class="hero-subtitle">Track your sleep to improve your mental wellness and receive personalized wellness insights.</p>
+  </section>
+
+  <!-- Sleep Tracker Card -->
+  <section class="tracker-card glass-card reveal" data-reveal>
+
+    <form id="sleepForm"  method="post">
+
+      <!-- Time Row -->
+      <div class="time-row">
+
+        <!-- Sleep Time -->
+        <div class="time-field">
+          <label class="field-label" for="sleepStart">
+            <span class="label-icon" aria-hidden="true">🌙</span> Sleep Time
+          </label>
+          <div class="time-input-wrap">
+            <input
+              type="time"
+              id="sleepStart"
+              name="sleepStart"
+              class="time-input"
+              data-field="sleep-start"
+              aria-describedby="sleepTimeHelp"
+              required
+            >
+          </div>
+          <span id="sleepTimeHelp" class="visually-hidden">Select the time you went to sleep, 24 hour format</span>
+        </div>
+
+        <!-- Divider Icon -->
+        <div class="time-divider" aria-hidden="true">
+          <i class="fa-solid fa-arrow-right-long"></i>
+        </div>
+
+        <!-- Wake Up Time -->
+        <div class="time-field">
+          <label class="field-label" for="wakeTime">
+            <span class="label-icon" aria-hidden="true">☀️</span> Wake Up Time
+          </label>
+          <div class="time-input-wrap">
+            <input
+              type="time"
+              id="wakeTime"
+              name="wakeTime"
+              class="time-input"
+              data-field="wake-time"
+              aria-describedby="wakeTimeHelp"
+              required
+            >
+          </div>
+          <span id="wakeTimeHelp" class="visually-hidden">Select the time you woke up, 24 hour format</span>
+        </div>
+
+      </div>
+
+      <!-- Auto Duration Display -->
+      <div class="duration-display" id="durationDisplay" role="status" aria-live="polite">
+        <div class="duration-icon" aria-hidden="true"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="duration-text">
+          <span class="duration-label">Sleep Duration</span>
+          <span class="duration-value" id="sleepDuration" data-duration-minutes="">Select both times to calculate</span>
+        </div>
+      </div>
+
+      <!-- Sleep Quality Selector -->
+      <fieldset class="quality-section">
+        <legend class="field-label quality-legend">
+          <span class="label-icon" aria-hidden="true">✨</span> Sleep Quality
+        </legend>
+
+        <div class="quality-grid" id="sleepQualityGroup" role="radiogroup" aria-label="Sleep quality">
+
+          <button type="button" class="quality-option" data-quality="restless" role="radio" aria-checked="false" tabindex="0">
+            <span class="quality-emoji" aria-hidden="true">😫</span>
+            <span class="quality-label">restless</span>
+          </button>
+
+          <button type="button" class="quality-option" data-quality="light" role="radio" aria-checked="false" tabindex="-1">
+            <span class="quality-emoji" aria-hidden="true">😪</span>
+            <span class="quality-label">light sleep</span>
+          </button>
+
+          <button type="button" class="quality-option" data-quality="balanced" role="radio" aria-checked="false" tabindex="-1">
+            <span class="quality-emoji" aria-hidden="true">😌</span>
+            <span class="quality-label">balanced</span>
+          </button>
+
+          <button type="button" class="quality-option" data-quality="restorative" role="radio" aria-checked="false" tabindex="-1">
+            <span class="quality-emoji" aria-hidden="true">😊</span>
+            <span class="quality-label">restorative</span>
+          </button>
+
+          <button type="button" class="quality-option" data-quality="deep" role="radio" aria-checked="false" tabindex="-1">
+            <span class="quality-emoji" aria-hidden="true">🌟</span>
+            <span class="quality-label">deep sleep</span>
+          </button>
+
+        </div>
+
+        <!-- Hidden input for Flask form submission -->
+        <input type="hidden" id="sleepQuality" name="sleepQuality" data-field="sleep-quality" value="">
+      </fieldset>
+
+      <!-- Actions -->
+      <div class="tracker-actions">
+        <button type="submit" class="btn-save-sleep" id="saveSleepBtn" disabled>
+          <span class="btn-icon" aria-hidden="true">💾</span>
+          <span class="btn-text">Save Sleep</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+
+        <button type="button" class="btn-reset-sleep" id="sleepResetBtn">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reset</span>
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+</main>
+
+<!-- ============================= -->
+<!-- TOAST CONTAINER (shared component, same as Mood Tracker) -->
+<!-- ============================= -->
+<div class="serenity-toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Serenity Sleep Tracker Script — fully self-contained, no dependency on script.js -->
+<script src="{{ url_for('static', filename='js/sleep_tracker.js') }}"></script>
+</body>
+</html>

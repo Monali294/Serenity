@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker | Serenity</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- Fonts: Poppins (display) + Inter (body) — same pairing as Sleep Tracker -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Serenity Habit Tracker Styles — no dependency on style.css;
+     dashboard.css supplies the shared navbar -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/habit_tracker.css') }}">
+
+<!-- Applies saved theme before first paint, so there is no light/dark flash -->
+<script>
+  (function () {
+    var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- ============================= -->
+<!-- NAVBAR (shared across Serenity app, same structure as Sleep Tracker) -->
+<!-- ============================= -->
+<nav class="navbar serenity-nav scrolled" id="mainNav">
+    <div class="container-fluid px-4">
+
+        <a class="navbar-brand serenity-logo" href="{{ url_for('dashboard') }}">
+            <span class="logo-leaf">🌿</span> Serenity
+        </a>
+
+        <div class="nav-actions ms-auto">
+            <!-- Notification -->
+            <button class="sr-notif-btn" id="notifBtn" aria-label="Notifications">
+                <i class="fa-regular fa-bell"></i>
+                <span class="notif-badge">3</span>
+            </button>
+
+            <!-- Theme -->
+            <button class="theme-toggle" id="themeToggle"
+                aria-label="Toggle dark mode"
+                title="Toggle theme">
+                <i class="fa-solid fa-moon"></i>
+                <i class="fa-solid fa-sun"></i>
+            </button>
+
+            <!-- Back to Dashboard -->
+            <a href="{{ url_for('dashboard') }}"
+               class="back-btn-nav"
+               title="Back to Dashboard">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Dashboard</span>
+            </a>
+
+        </div>
+
+    </div>
+</nav>
+
+<!-- ============================= -->
+<!-- MAIN CONTENT -->
+<!-- ============================= -->
+<main class="serenity-main">
+
+  <!-- Hero Section -->
+  <section class="hero-section reveal" data-reveal>
+    <div class="hero-icon" aria-hidden="true">🌱</div>
+    <h1 class="hero-title">Habit Tracker</h1>
+    <p class="hero-subtitle">Build small, steady routines — one day at a time. Perfection isn't the goal, showing up is.</p>
+  </section>
+
+  {# ============================================================
+     FLASK/JINJA DATA CONTRACT
+     - user_habits: list of habits the user currently follows, e.g.
+         { id, name, icon, streak, completed_today, is_custom, week }
+       where `week` is an optional list of 7 booleans (oldest→newest,
+       last = today). Omit or leave undefined and the page still works.
+     - preset_habits: catalog of habits available to add (excluding
+       ones already followed), e.g. { id, name, icon }.
+     A default catalog is provided below so this page renders
+     correctly even before these are wired up to your database.
+     ============================================================ #}
+  {% set default_habit_catalog = [
+    {'id': 'water', 'name': 'Drink Water', 'icon': '💧'},
+    {'id': 'meditate', 'name': 'Meditate', 'icon': '🧘'},
+    {'id': 'read', 'name': 'Read', 'icon': '📖'},
+    {'id': 'move', 'name': 'Move / Exercise', 'icon': '🚶'},
+    {'id': 'sleep_on_time', 'name': 'Sleep on Time', 'icon': '😴'},
+    {'id': 'journal', 'name': 'Journal', 'icon': '✍️'},
+    {'id': 'eat_mindfully', 'name': 'Eat Mindfully', 'icon': '🥗'},
+    {'id': 'gratitude', 'name': 'Practice Gratitude', 'icon': '🙏'},
+    {'id': 'digital_detox', 'name': 'Digital Detox', 'icon': '📵'},
+    {'id': 'sunlight', 'name': 'Get Sunlight', 'icon': '🌞'},
+    {'id': 'selfcare', 'name': 'Self-care Routine', 'icon': '🧴'},
+    {'id': 'focus_session', 'name': 'Focus Session', 'icon': '🎯'}
+  ] %}
+  {% set habits = user_habits if user_habits is defined else [] %}
+  {% set catalog = preset_habits if preset_habits is defined else default_habit_catalog %}
+
+  <!-- Progress Summary (only rendered when the user has habits) -->
+  <section class="progress-card glass-card reveal {% if not habits %}d-none{% endif %}" id="progressCard" data-reveal>
+    <div class="progress-ring-wrap">
+      <svg class="progress-ring-svg" viewBox="0 0 84 84">
+        <circle class="progress-ring-track" cx="42" cy="42" r="36"></circle>
+        <circle class="progress-ring-fill" id="progressRingFill" cx="42" cy="42" r="36"></circle>
+      </svg>
+      <div class="progress-ring-label" id="progressRingLabel">0/0</div>
+    </div>
+    <div>
+      <p class="progress-text-title" id="progressTitle">Let's get started</p>
+      <p class="progress-text-sub" id="progressSubtitle">Complete your habits to see today's progress.</p>
+    </div>
+  </section>
+
+  <!-- Daily Habit List -->
+  <section class="habit-list-section {% if not habits %}d-none{% endif %}" id="habitListSection">
+    <div class="section-header">
+      <h2>Today's Habits</h2>
+      <button type="button" id="manageHabitsBtn" class="btn-add-habit">
+        <i class="fa-solid fa-plus"></i> <span>Add Habit</span>
+      </button>
+    </div>
+
+    <div class="habit-grid" id="habitGrid">
+      {% for habit in habits %}
+      <article class="habit-card glass-card {% if habit.completed_today %}completed{% endif %}" data-habit-id="{{ habit.id }}" data-reveal>
+        <button type="button" class="habit-check" aria-label="Mark {{ habit.name }} as done today" aria-pressed="{{ 'true' if habit.completed_today else 'false' }}">
+          <i class="fa-solid fa-check"></i>
+        </button>
+        <div class="habit-body">
+          <div class="habit-top-row">
+            <span class="habit-name">
+              <span class="habit-emoji" aria-hidden="true">{{ habit.icon | default('🎯') }}</span>
+              <span class="habit-label">{{ habit.name }}</span>
+            </span>
+            <button type="button" class="habit-delete-btn" aria-label="Delete {{ habit.name }}">
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+          <div class="habit-meta-row">
+            <span class="habit-streak"><i class="fa-solid fa-fire" aria-hidden="true"></i> {{ habit.streak | default(0) }} day streak</span>
+            <span class="habit-week-dots" aria-hidden="true">
+              {% set week = habit.week if habit.week is defined else [false, false, false, false, false, false, habit.completed_today] %}
+              {% for day_done in week %}
+              <span class="week-dot {% if day_done %}dot-done{% endif %} {% if loop.last %}dot-today{% endif %}"></span>
+              {% endfor %}
+            </span>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <p class="empty-habits-msg d-none" id="emptyHabitsMsg">No habits yet — add one below to get started.</p>
+  </section>
+
+  <!-- Habit Picker: full onboarding when the user has no habits yet,
+       collapsible "add more" panel once they do -->
+  <section class="picker-card glass-card reveal {% if habits %}picker-collapsed{% endif %}" id="habitPicker" data-reveal>
+    <h2 id="pickerTitle">{% if habits %}Add More Habits{% else %}Choose Your Habits{% endif %}</h2>
+    <p class="picker-subtitle">Pick a few to start, or add your own — you can change these anytime.</p>
+
+    <div class="preset-grid" id="presetGrid">
+      {% for h in catalog %}
+      <button type="button" class="preset-chip" data-preset-id="{{ h.id }}" data-name="{{ h.name }}" data-icon="{{ h.icon }}" aria-pressed="false">
+        <span class="chip-icon" aria-hidden="true">{{ h.icon }}</span>
+        <span class="chip-name">{{ h.name }}</span>
+      </button>
+      {% endfor %}
+    </div>
+
+    <div class="custom-habit-row">
+      <input type="text" id="customHabitInput" class="custom-habit-input" placeholder="Add your own habit…" maxlength="40" autocomplete="off">
+      <button type="button" id="addCustomChipBtn" class="btn-add-custom" aria-label="Add custom habit">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="picker-actions">
+      <button type="button" id="cancelPickerBtn" class="btn-cancel-picker {% if not habits %}d-none{% endif %}">Cancel</button>
+      <button type="button" id="savePickerBtn" class="btn-save-habits" disabled>
+        <span class="btn-text">{% if habits %}Add Selected Habits{% else %}Start Tracking{% endif %}</span>
+        <span class="btn-spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================= -->
+<!-- DELETE CONFIRMATION MODAL -->
+<!-- ============================= -->
+<div class="habit-modal-overlay" id="habitModalOverlay" hidden>
+  <div class="habit-modal" role="dialog" aria-modal="true" aria-labelledby="habitModalTitle" aria-describedby="habitModalDesc">
+    <h3 id="habitModalTitle">Remove this habit?</h3>
+    <p id="habitModalDesc">Its streak and history will be deleted too. You can always add it back later.</p>
+    <div class="habit-modal-actions">
+      <button type="button" id="habitModalCancel">Keep it</button>
+      <button type="button" id="habitModalConfirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- TOAST CONTAINER (shared component, same as Sleep Tracker) -->
+<!-- ============================= -->
+<div class="serenity-toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Serenity Habit Tracker Script — fully self-contained, no dependency on script.js -->
+<script src="{{ url_for('static', filename='js/habit_tracker.js') }}"></script>
+</body>
+</html>

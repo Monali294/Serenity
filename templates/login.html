@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Serenity</title>
+<meta name="description" content="Sign in to Serenity — your safe space for healing.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Bootstrap 5 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+<!-- Serenity CSS (same file; login additions are appended below) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+
+<!-- ============ ANIMATED BACKGROUND (shared with home.html) ============ -->
+<div class="bg-scene" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+  <div class="particles" id="particles"></div>
+</div>
+
+<!-- ============ MINIMAL NAVBAR (logo + theme toggle only) ============ -->
+<nav class="navbar serenity-nav scrolled" id="mainNav">
+  <div class="container">
+    <a class="navbar-brand serenity-logo" href="/">
+      <span class="logo-leaf">🌿</span> Serenity
+    </a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+        <i class="fa-solid fa-moon"></i>
+        <i class="fa-solid fa-sun"></i>
+      </button>
+      <a href="/register" class="btn btn-register">Register</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ AUTH PAGE ============ -->
+<main class="auth-page-wrap">
+  <div class="auth-container">
+
+    <!-- ──────── LEFT · BRAND PANEL ──────── -->
+    <aside class="auth-brand" aria-hidden="true">
+      <div class="auth-brand-inner">
+
+        <!-- Brand name -->
+        <p class="auth-brand-tag"><span class="logo-leaf">🌿</span> Serenity</p>
+
+        <!-- Mini breathing orb (reuses existing .breathing-orb classes) -->
+        <div class="mini-orb-wrap">
+          <div class="breathing-orb">
+            <span class="ring ring-1"></span>
+            <span class="ring ring-2"></span>
+            <span class="ring ring-3"></span>
+            <span class="orb-core"></span>
+          </div>
+        </div>
+
+        <!-- Quote -->
+        <blockquote class="auth-brand-quote">
+          "The bravest thing you can do is begin again."
+        </blockquote>
+        <p class="auth-brand-sub">Your safe space has been waiting.</p>
+
+        <!-- Decorative floating chips -->
+        <div class="auth-chip chip-a"><i class="fa-solid fa-heart"></i></div>
+        <div class="auth-chip chip-b"><i class="fa-solid fa-spa"></i></div>
+        <div class="auth-chip chip-c"><i class="fa-solid fa-moon"></i></div>
+        <div class="auth-chip chip-d"><i class="fa-solid fa-leaf"></i></div>
+
+      </div>
+    </aside>
+
+    <!-- ──────── RIGHT · FORM PANEL ──────── -->
+    <section class="auth-form-side">
+      <div class="auth-form-inner">
+
+        <!-- Greeting (stagger-animated) -->
+        <div class="auth-greeting">
+          <h1 class="auth-title">Welcome back <span class="wave-hand">👋</span></h1>
+          <p class="auth-subtitle">Sign in to continue your healing journey.</p>
+        </div>
+
+        <!-- ── Flask flash messages ── -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-serenity
+                  alert-{{ 'danger' if category == 'error' else category }}
+                  alert-dismissible fade show mb-3" role="alert">
+              <i class="fa-solid
+                {{ 'fa-circle-exclamation' if category == 'error' else
+                   'fa-circle-check'       if category == 'success' else
+                   'fa-circle-info' }} me-2"></i>
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- JS-driven alert area (client-side validation feedback) -->
+        <div id="authAlert" class="auth-alert-area" aria-live="polite"></div>
+
+        <!-- ── LOGIN FORM — DO NOT CHANGE ACTION / NAME ATTRS ── -->
+        <form action="/login" method="POST" id="loginForm" autocomplete="off" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <!-- Email -->
+          <div class="form-field-group mb-3 auth-field-anim" style="--fi:1">
+            <span class="field-icon" aria-hidden="true"><i class="fa-solid fa-envelope"></i></span>
+            <input
+              type="email"
+              class="form-control auth-input"
+              id="loginEmail"
+              name="email"
+              placeholder="Email address"
+              autocomplete="off"
+              inputmode="email"
+              required
+            >
+          </div>
+
+          <!-- Password -->
+          <div class="form-field-group mb-3 auth-field-anim" style="--fi:2">
+            <span class="field-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
+            <input
+              type="password"
+              class="form-control auth-input auth-input-pw"
+              id="loginPassword"
+              name="password"
+              placeholder="Password"
+              autocomplete="new-password"
+              required
+            >
+            <button
+              type="button"
+              class="toggle-password"
+              id="togglePassword"
+              aria-label="Show password"
+              title="Show / hide password">
+              <i class="fa-regular fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+
+          <!-- Remember Me + Forgot -->
+          <div class="auth-options auth-field-anim" style="--fi:3">
+            <div class="form-check auth-check">
+              <input class="form-check-input" type="checkbox" id="rememberMe" name="remember_me">
+              <label class="form-check-label" for="rememberMe">Remember me</label>
+            </div>
+            <a href="{{ url_for('forgot_password') }}" class="auth-link forgot-link">Forgot password?</a>
+          </div>
+
+          <!-- Submit button -->
+          <div class="auth-field-anim" style="--fi:4">
+            <button type="submit" class="btn btn-primary-glow w-100 login-submit-btn" id="loginBtn">
+              <span class="login-btn-default">
+                Sign In &nbsp;<i class="fa-solid fa-arrow-right-long"></i>
+              </span>
+              <span class="login-btn-loading d-none">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Signing in…
+              </span>
+            </button>
+          </div>
+        </form>
+
+        <!-- OR divider -->
+        <div class="auth-divider auth-field-anim" style="--fi:5">
+          <span>OR</span>
+        </div>
+
+        <!-- Social / OAuth buttons -->
+        <!--<div class="auth-social auth-field-anim" style="--fi:6">
+          <button type="button" class="social-btn social-google" aria-label="Continue with Google">
+            <i class="fa-brands fa-google"></i>
+            <span>Google</span>
+          </button>
+          <button type="button" class="social-btn social-apple" aria-label="Continue with Apple">
+            <i class="fa-brands fa-apple"></i>
+            <span>Apple</span>
+          </button>
+          <button type="button" class="social-btn social-meta" aria-label="Continue with Facebook">
+            <i class="fa-brands fa-facebook-f"></i>
+            <span>Meta</span>
+          </button>
+        </div>-->
+
+        <!-- Register link -->
+        <p class="auth-switch auth-field-anim" style="--fi:7">
+          Don't have an account?&nbsp;
+          <a href="/register" class="auth-link">Create one free</a>
+        </p>
+
+      </div><!-- /.auth-form-inner -->
+    </section><!-- /.auth-form-side -->
+
+  </div><!-- /.auth-container -->
+</main>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Serenity JS (login additions are appended to the same file) -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

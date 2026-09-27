@@ -1,0 +1,598 @@
+/* ============================================================
+   journal_detail.css
+   Page-specific styles for journal_detail.html.
+
+   Self-contained: defines its own design tokens (--bg, --surface,
+   --primary, --text, --shadow-soft, --radius-lg, etc.) and its own
+   navbar styling. No longer depends on style.css or script.js.
+   ============================================================ */
+
+:root {
+  --bg: #F6F4FC;
+  --surface: rgba(255, 255, 255, 0.62);
+  --surface-solid: #FFFFFF;
+  --surface-border: rgba(255, 255, 255, 0.7);
+
+  --text: #2B2740;
+  --text-muted: #716C8C;
+
+  --primary: #7C6AEF;
+  --primary-2: #9B8AFB;
+
+  --shadow-soft: 0 8px 30px rgba(112, 92, 190, 0.12);
+  --radius-lg: 26px;
+
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+[data-theme="dark"] {
+  --bg: #131120;
+  --surface: rgba(38, 33, 61, 0.55);
+  --surface-solid: #211D38;
+  --surface-border: rgba(255, 255, 255, 0.08);
+
+  --text: #ECE9F7;
+  --text-muted: #ACA6C9;
+
+  --primary: #9B8AFB;
+  --primary-2: #B6A8FD;
+
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  overflow-x: hidden;
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+/* ------------------------------------------------------------
+   0. Navbar — full styling (previously supplied by style.css)
+   ------------------------------------------------------------ */
+.serenity-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 14px 28px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.serenity-nav.scrolled {
+  background: var(--surface);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  box-shadow: var(--shadow-soft);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.serenity-logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-solid);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.theme-toggle:hover { transform: scale(1.08); box-shadow: var(--shadow-soft); }
+.theme-toggle .fa-sun { display: none; }
+[data-theme="dark"] .theme-toggle .fa-moon { display: none; }
+[data-theme="dark"] .theme-toggle .fa-sun { display: inline-block; }
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-solid);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.logout-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.serenity-nav .sr-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------
+   1. Page container + mood palette
+   The mood color is a scoped variable, defaulted to the brand
+   purple, then overridden per data-mood value. It's used only
+   as an accent (entry rule, mood dot, AI glow) — the primary
+   button keeps the brand gradient for consistency.
+   ------------------------------------------------------------ */
+.jd-page {
+  --jd-navbar-clearance: 88px;
+  --jd-border: color-mix(in srgb, var(--text) 14%, transparent);
+  --jd-mood-color: var(--primary);
+
+  position: relative;
+  isolation: isolate;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(var(--jd-navbar-clearance) + 1.5rem) 1.5rem 4rem;
+  overflow: hidden;
+}
+
+.jd-page[data-mood="happy"]    { --jd-mood-color: #e6a336; }
+.jd-page[data-mood="excited"]  { --jd-mood-color: #ff5fa2; }
+.jd-page[data-mood="calm"]     { --jd-mood-color: #4fb3ac; }
+.jd-page[data-mood="neutral"]  { --jd-mood-color: #9b8fd1; }
+.jd-page[data-mood="sad"]      { --jd-mood-color: #6c8fc7; }
+.jd-page[data-mood="stressed"] { --jd-mood-color: #d97a5a; }
+
+/* ------------------------------------------------------------
+   2. Ambient background — quiet, mood-tinted, kept subtle so
+   it supports the page rather than competing with it.
+   ------------------------------------------------------------ */
+.jd-blob {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.22;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--jd-mood-color), transparent 70%);
+  transition: background 0.6s ease;
+}
+
+.jd-blob-1 {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  left: -140px;
+  animation: jdDrift 22s ease-in-out infinite;
+}
+
+.jd-blob-2 {
+  width: 340px;
+  height: 340px;
+  bottom: -120px;
+  right: -100px;
+  animation: jdDrift 26s ease-in-out infinite reverse;
+}
+
+@keyframes jdDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(24px, 30px) scale(1.06); }
+}
+
+/* ------------------------------------------------------------
+   3. Back link
+   ------------------------------------------------------------ */
+.jd-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.7;
+  text-decoration: none;
+  margin-bottom: 2rem;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.jd-back-link:hover {
+  opacity: 1;
+  transform: translateX(-3px);
+}
+
+.jd-back-link:focus-visible {
+  outline: 2px solid var(--jd-mood-color);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ------------------------------------------------------------
+   4. Two-column layout: entry (wide, unboxed) + sidebar (narrow)
+   Collapses to a single column below 960px.
+   ------------------------------------------------------------ */
+.jd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 3rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .jd-layout {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
+
+/* ------------------------------------------------------------
+   5. The entry itself — open "diary page" styling.
+   No glass card, no border box — just a soft left accent rule
+   in the mood color to give it quiet structure.
+   ------------------------------------------------------------ */
+.jd-entry {
+  position: relative;
+  padding-left: 1.75rem;
+  border-left: 3px solid var(--jd-mood-color);
+}
+
+.jd-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.75;
+  margin-bottom: 1rem;
+}
+
+.jd-mood-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--jd-mood-color);
+  flex-shrink: 0;
+}
+
+.jd-meta-sep {
+  opacity: 0.5;
+}
+
+.jd-meta-date {
+  font-weight: 500;
+}
+
+.jd-title {
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  line-height: 1.2;
+  color: var(--text);
+  margin: 0 0 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.jd-body {
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.95;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-width: 68ch;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------
+   6. Sidebar — sticky on desktop
+   ------------------------------------------------------------ */
+.jd-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: sticky;
+  top: calc(var(--jd-navbar-clearance) + 1.5rem);
+}
+
+@media (max-width: 960px) {
+  .jd-sidebar {
+    position: static;
+  }
+}
+
+/* ------------------------------------------------------------
+   7. AI Reflection — the ONE card on this page, so it earns
+   its glass treatment instead of competing with four others.
+   ------------------------------------------------------------ */
+.jd-ai {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--jd-mood-color) 20%, transparent), transparent 60%),
+    var(--surface);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid color-mix(in srgb, var(--jd-mood-color) 35%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 1.5rem 1.6rem;
+  transition: border-color 0.6s ease;
+}
+
+.jd-ai-glow {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--jd-mood-color) 45%, transparent), transparent 70%);
+  pointer-events: none;
+  animation: jdGlowPulse 6s ease-in-out infinite;
+}
+
+@keyframes jdGlowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.1); }
+}
+
+.jd-ai-heading {
+  position: relative;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.9rem;
+}
+
+.jd-ai-text {
+  position: relative;
+  font-size: 0.98rem;
+  line-height: 1.75;
+  font-style: italic;
+  color: var(--text);
+  opacity: 1;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+}
+
+.jd-ai-empty {
+  position: relative;
+  opacity: 0.6;
+  font-style: normal;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------
+   8. Actions — quiet, no boxed card, buttons carry the weight
+   ------------------------------------------------------------ */
+.jd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jd-delete-form {
+  margin: 0;
+}
+
+.jd-btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.85rem 1.4rem;
+  border-radius: calc(var(--radius-lg) - 8px);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.jd-btn:hover {
+  transform: translateY(-2px);
+}
+
+.jd-btn:focus-visible {
+  outline: 2px solid var(--jd-mood-color);
+  outline-offset: 2px;
+}
+
+.jd-btn:active {
+  transform: translateY(0);
+}
+
+.jd-btn-primary {
+  background: linear-gradient(135deg, var(--primary), #ff9ae2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: var(--shadow-soft);
+}
+
+.jd-btn-primary:hover {
+  box-shadow: 0 10px 24px rgba(168, 128, 255, 0.35);
+}
+
+/* Softened "quiet danger" style — recognizable as destructive
+   without the alarm-red that clashes with a calm aesthetic. */
+.jd-btn-quiet-danger {
+  background: transparent;
+  color: var(--text);
+  opacity: 0.8;
+  border: 1px solid var(--jd-border);
+}
+
+.jd-btn-quiet-danger:hover {
+  opacity: 1;
+  background: color-mix(in srgb, #d97a5a 12%, transparent);
+  border-color: color-mix(in srgb, #d97a5a 40%, transparent);
+  color: #b9573a;
+}
+
+.jd-btn-ghost {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.jd-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ------------------------------------------------------------
+   9. Delete confirmation modal
+   ------------------------------------------------------------ */
+.jd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 30, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.jd-modal-overlay.jd-modal-visible {
+  opacity: 1;
+}
+
+.jd-modal-overlay[hidden] {
+  display: none;
+}
+
+.jd-modal {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 1.75rem;
+  transform: translateY(12px) scale(0.97);
+  transition: transform 0.25s ease;
+}
+
+.jd-modal-overlay.jd-modal-visible .jd-modal {
+  transform: translateY(0) scale(1);
+}
+
+.jd-modal h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.jd-modal p {
+  margin: 0 0 1.4rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+.jd-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.jd-modal-actions .jd-btn {
+  width: auto;
+}
+
+/* ------------------------------------------------------------
+   10. Staggered fade-in / slide-up reveal (driven by journal_detail.js)
+   ------------------------------------------------------------ */
+.jd-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.jd-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fallback: if JS never runs, content must still be visible */
+.no-js .jd-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* ------------------------------------------------------------
+   11. Responsive — mobile
+   ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .jd-page {
+    --jd-navbar-clearance: 72px;
+    padding: calc(var(--jd-navbar-clearance) + 1.25rem) 1rem 3rem;
+  }
+
+  .jd-title {
+    font-size: 1.7rem;
+  }
+
+  .jd-body {
+    font-size: 1.05rem;
+  }
+
+  .jd-entry {
+    padding-left: 1.1rem;
+  }
+
+  .jd-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .jd-modal-actions .jd-btn {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------
+   12. Accessibility — reduced motion
+   ------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .jd-back-link,
+  .jd-btn,
+  .jd-ai,
+  .jd-modal,
+  .jd-modal-overlay,
+  .jd-reveal,
+  .jd-blob,
+  .jd-ai-glow {
+    transition: none;
+    animation: none;
+  }
+
+  .jd-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

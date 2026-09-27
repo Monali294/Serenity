@@ -5,3 +5,5 @@ __pycache__/
 .vscode/
 .idea/
 instance/
+app_old.py
+dashboard_error_log.txt

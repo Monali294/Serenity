@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Journal · Serenity</title>
+
+  <!-- Fonts: Sora for display, Inter for body, IBM Plex Mono for stats/utility -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Journal page styles — fully self-contained, no dependency on style.css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/journal.css') }}">
+  <!-- FLASK: adjust static path above to match your app's static folder structure -->
+
+  <!-- Applies saved theme before first paint, so there is no light/dark flash -->
+  <script>
+    (function () {
+      var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- Ambient background orbs (decorative, purely visual) -->
+  <div class="ambient" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- TOP NAVIGATION                -->
+  <!-- ============================= -->
+  <nav class="navbar serenity-nav scrolled" id="mainNav">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand serenity-logo" href="{{ url_for('dashboard') }}">
+        <span class="logo-leaf">🌿</span> Serenity
+      </a>
+      <div class="nav-actions ms-auto">
+        <button class="sr-notif-btn" id="notifBtn" aria-label="Notifications">
+          <i class="fa-regular fa-bell"></i>
+          <span class="notif-badge">3</span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon"></i>
+          <i class="fa-solid fa-sun"></i>
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="back-dashboard-btn" title="Back to Dashboard">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================= -->
+  <!-- MAIN LAYOUT                   -->
+  <!-- ============================= -->
+  <main class="layout">
+
+    <!-- ===== LEFT SIDEBAR ===== -->
+    <aside class="sidebar glass">
+      <div class="sidebar-header">
+        <div class="search-wrap">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <input type="search" id="searchJournal" placeholder="Search journal entries…" autocomplete="off">
+        </div>
+
+        <button type="button" id="newJournalBtn" class="btn btn-primary btn-full">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>New Journal</span>
+        </button>
+      </div>
+
+      <div class="sidebar-scroll">
+        <p class="sidebar-label">Previous Entries</p>
+
+        <!-- ============================================================ -->
+        <!-- FLASK/JINJA: render one .journal-card per entry, e.g.        -->
+        <!-- {% for entry in journal_entries %}                           -->
+        <!--   <article class="journal-card" data-id="{{ entry.id }}">    -->
+        <!--     <div class="journal-card-top">                           -->
+        <!--       <span class="mood-emoji">{{ entry.mood_emoji }}</span> -->
+        <!--       <span class="journal-date">{{ entry.created_at }}</span>-->
+        <!--     </div>                                                   -->
+        <!--     <h3 class="journal-card-title">{{ entry.title }}</h3>    -->
+        <!--     <p class="journal-card-excerpt">{{ entry.excerpt }}</p>  -->
+        <!--   </article>                                                 -->
+        <!-- {% endfor %}                                                 -->
+        <!-- ============================================================ -->
+        <div id="journalList" class="journal-list">
+          {% if journals %}
+
+    {% for journal in journals %}
+
+    <a href="{{ url_for('journal_detail', journal_id=journal[0]) }}" class="journal-link">
+
+<article class="journal-card">
+        <div class="journal-card-top">
+
+            <span class="mood-emoji">
+                {% if journal[3] == "happy" %}
+                    😊
+                {% elif journal[3] == "calm" %}
+                    😌
+                {% elif journal[3] == "sad" %}
+                    😔
+                {% elif journal[3] == "stressed" %}
+                    😣
+                {% else %}
+                    📝
+                {% endif %}
+            </span>
+
+            <span class="journal-date">
+                {{ journal[6] }} 
+            </span>
+
+        </div>
+
+        <h3 class="journal-card-title">
+            {{ journal[1] }}
+        </h3>
+
+        <p class="journal-card-excerpt">
+            {{ journal[2][:80] }}...
+        </p>
+
+    </article>
+    </a>
+
+    {% endfor %}
+
+{% else %}
+
+<div class="empty-state">
+    <p>No journal entries yet.</p>
+</div>
+
+{% endif %}
+        </div>
+          <!-- Empty state, shown by journal.js when search yields nothing -->
+          <div class="empty-state" id="emptyState" hidden>
+            <p>No entries match your search.</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== RIGHT WRITING AREA ===== -->
+    <section class="writing-area glass">
+
+      <!-- FLASK: set action="{{ url_for('save_journal') }}" and method="POST" -->
+      <form id="journalForm" class="journal-form" action="{{ url_for('save_journal') }}" method="POST" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if editing %}
+<input type="hidden" name="journal_id" value="{{ journal[0] }}">
+{% endif %}
+        <div class="form-top">
+          <input
+            type="text"
+            id="journalTitle"
+            name="title"
+            class="title-input"
+            placeholder="Give your entry a title…"
+            autocomplete="off"
+    value="{{ journal[1] if editing else '' }}"
+    required>
+          <div class="autosave-indicator" id="autosaveIndicator">
+            <span class="autosave-dot"></span>
+            <span class="autosave-text">All changes saved</span>
+          </div>
+        </div>
+
+        <!-- MOOD SELECTOR -->
+        <fieldset class="mood-selector">
+          <legend>How are you feeling?</legend>
+          <div class="mood-options">
+            <label class="mood-option">
+              <input
+    type="radio"
+    name="emotion"
+    value="happy"
+    {% if editing and journal[4]=='happy' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😊</span></span>
+              <span class="mood-label">Happy</span>
+            </label>
+            <label class="mood-option">
+              <input
+type="radio"
+name="emotion"
+value="calm"
+{% if editing and journal[4]=='calm' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😌</span></span>
+              <span class="mood-label">Calm</span>
+            </label>
+            <label class="mood-option">
+              <input
+type="radio"
+name="emotion"
+value="neutral"
+{% if editing and journal[4]=='neutral' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😐</span></span>
+              <span class="mood-label">Neutral</span>
+            </label>
+            <label class="mood-option">
+              <input
+type="radio"
+name="emotion"
+value="sad"
+{% if editing and journal[4]=='sad' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😔</span></span>
+              <span class="mood-label">Sad</span>
+            </label>
+            <label class="mood-option">
+              <input
+type="radio"
+name="emotion"
+value="stressed"
+{% if editing and journal[4]=='stressed' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😣</span></span>
+              <span class="mood-label">Stressed</span>
+            </label>
+            <label class="mood-option">
+              <input
+type="radio"
+name="emotion"
+value="excited"
+{% if editing and journal[4]=='excited' %}checked{% endif %}
+>
+              <span class="mood-orb"><span class="mood-emoji">😍</span></span>
+              <span class="mood-label">Excited</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <!-- WRITING AREA -->
+        <div class="textarea-wrap">
+          <textarea
+            id="journalText"
+            name="journal_text"
+            class="journal-textarea"
+            placeholder="Start writing whatever comes to mind…"
+            required
+          >{{ journal[2] if editing else '' }}</textarea>
+        </div>
+
+        <!-- STATS BAR -->
+        <div class="stats-bar">
+          <div class="stat-chip">
+            <span class="stat-value" id="wordCount">0</span>
+            <span class="stat-label">words</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-value" id="charCount">0</span>
+            <span class="stat-label">characters</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-value" id="readingTime">0 min</span>
+            <span class="stat-label">read</span>
+          </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="form-actions">
+          <button type="button" id="deleteJournal" class="btn btn-ghost btn-danger">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0l1 12a1 1 0 001 1h6a1 1 0 001-1l1-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Delete</span>
+          </button>
+          <button type="button" id="clearJournal" class="btn btn-ghost">
+            <span>Clear</span>
+          </button>
+          <button type="submit" id="saveJournal" class="btn btn-primary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>
+{% if editing %}
+Update Journal
+{% else %}
+Save Journal
+{% endif %}
+</span>
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/journal.js') }}"></script>
+  <!-- FLASK: adjust static path above to match your app's static folder structure -->
+</body>
+</html>

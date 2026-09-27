@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Serenity</title>
+<meta name="description" content="Your daily wellness overview on Serenity.">
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<!-- Bootstrap 5 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+<!-- Dashboard styles (self-contained, no dependency on style.css) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+<!-- Applies saved theme before first paint, so there is no light/dark flash.
+     Also removes .no-js immediately — if any later script fails to load,
+     .reveal content still falls back to visible (see dashboard.css). -->
+<script>
+  (function () {
+    document.documentElement.classList.remove('no-js');
+    var saved = localStorage.getItem('serenity-theme') || localStorage.getItem('serenityTheme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+</head>
+<body>
+
+<!-- ============ ANIMATED BACKGROUND (shared) ============ -->
+<div class="bg-scene" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+  <div class="particles" id="particles"></div>
+</div>
+
+<!-- ============ TOAST NOTIFICATION ============ -->
+<div id="toastContainer" class="sr-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+<!-- ============ NAVBAR ============ -->
+<nav class="navbar serenity-nav scrolled" id="mainNav">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand serenity-logo" href="/">
+      <span class="logo-leaf">🌿</span> Serenity
+    </a>
+    <div class="nav-actions ms-auto">
+      <!-- Notification bell -->
+      <button class="sr-notif-btn" id="notifBtn" aria-label="Notifications">
+        <i class="fa-regular fa-bell"></i>
+        <span class="notif-badge">3</span>
+      </button>
+      <!-- Theme toggle (exact same markup + classes from home/login) -->
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+        <i class="fa-solid fa-moon"></i>
+        <i class="fa-solid fa-sun"></i>
+      </button>
+      <!-- Logout -->
+  <a href="{{ url_for('logout') }}"
+     class="logout-btn"
+     title="Logout"
+     onclick="return confirm('Are you sure you want to logout?')">
+      <i class="fa-solid fa-right-from-bracket"></i>
+  </a>
+     
+    </div>
+  </div>
+</nav>
+
+<!-- ============ MAIN DASHBOARD ============ -->
+<main class="sr-dashboard" id="dashMain">
+  <div class="container-fluid px-4">
+
+    <!-- ═══════════════════════════════════════
+         WELCOME SECTION
+    ═══════════════════════════════════════ -->
+    <section class="sr-welcome reveal" aria-label="Welcome">
+      <div class="sr-welcome-text">
+       <h1 class="sr-greeting" id="greetingText">
+    {{ greeting }}, {{ username }} 🌿
+</h1>
+        <p class="sr-greeting-sub" id="greetingSub">{{ greeting_sub }}</p>
+      </div>
+      <div class="sr-welcome-date" aria-label="Today's date">
+        <span class="sr-date-label" id="dateLabel"></span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         ROW 1 — MOOD + WELLNESS SCORE
+    ═══════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+      <!-- MOOD CHECK-IN -->
+      <div class="col-12 col-lg-7 reveal">
+        <div class="sr-card sr-mood-card h-100">
+          <div class="sr-card-header">
+            <div>
+              <p class="sr-card-eyebrow">Daily Check-in</p>
+              <h2 class="sr-card-title">How are you feeling today?</h2>
+            </div>
+            <button class="sr-card-reset d-none" id="moodResetBtn" title="Reset mood selection">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+          </div>
+
+          <div class="sr-mood-grid" id="moodGrid" role="radiogroup" aria-label="Select today's mood">
+            <button
+              class="sr-mood-btn {% if today_mood == 'Happy' %}selected{% endif %}"
+              data-mood="happy"
+              data-label="Happy"
+              aria-pressed="{% if today_mood == 'Happy' %}true{% else %}false{% endif %}">
+              <span class="sr-mood-icon" aria-hidden="true">😊</span>
+              <span class="sr-mood-ring" aria-hidden="true"></span>
+              <span class="sr-mood-name">Happy</span>
+            </button>
+            <button
+              class="sr-mood-btn {% if today_mood == 'Calm' %}selected{% endif %}"
+              data-mood="calm"
+              data-label="Calm"
+              aria-pressed="{% if today_mood == 'Calm' %}true{% else %}false{% endif %}">
+              <span class="sr-mood-icon" aria-hidden="true">🙂</span>
+              <span class="sr-mood-ring" aria-hidden="true"></span>
+              <span class="sr-mood-name">Calm</span>
+             </button>
+            <button
+              class="sr-mood-btn {% if today_mood == 'Neutral' %}selected{% endif %}"
+              data-mood="neutral"
+              data-label="Neutral"
+              aria-pressed="{% if today_mood == 'Neutral' %}true{% else %}false{% endif %}">
+              <span class="sr-mood-icon" aria-hidden="true">😐</span>
+              <span class="sr-mood-ring" aria-hidden="true"></span>
+              <span class="sr-mood-name">Neutral</span>
+            </button>
+            <button
+               class="sr-mood-btn {% if today_mood == 'Sad' %}selected{% endif %}"
+               data-mood="sad"
+               data-label="Sad"
+               aria-pressed="{% if today_mood == 'Sad' %}true{% else %}false{% endif %}">
+              <span class="sr-mood-icon" aria-hidden="true">😔</span>
+              <span class="sr-mood-ring" aria-hidden="true"></span>
+              <span class="sr-mood-name">Sad</span>
+            </button>
+            <button
+                class="sr-mood-btn {% if today_mood == 'Stressed' %}selected{% endif %}"
+               data-mood="stressed"
+               data-label="Stressed"
+               aria-pressed="{% if today_mood == 'Stressed' %}true{% else %}false{% endif %}">
+              <span class="sr-mood-icon" aria-hidden="true">😣</span>
+              <span class="sr-mood-ring" aria-hidden="true"></span>
+              <span class="sr-mood-name">Stressed</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WELLNESS SCORE -->
+      <div class="col-12 col-lg-5 reveal">
+        <div class="sr-card sr-score-card h-100">
+          <p class="sr-card-eyebrow">AI Wellness Score</p>
+          <h2 class="sr-card-title">Yesterday's Progress</h2>
+
+          <div class="sr-score-ring-wrap">
+            <svg class="sr-score-ring" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="sr-ring-track" cx="60" cy="60" r="52"/>
+              <circle class="sr-ring-fill" cx="60" cy="60" r="52" id="scoreArc"/>
+            </svg>
+            <div class="sr-score-inner">
+              <span class="sr-score-num" id="scoreNum">{{ wellness_score }}</span>
+              <span class="sr-score-pct">%</span>
+            </div>
+          </div>
+
+          <p class="sr-score-label" id="scoreLabel">{{ score_label }}</p>
+
+          <div class="sr-score-pillars">
+            <div class="sr-pillar">
+              <span class="sr-pillar-dot" style="background:#A593EE"></span>
+              <span>Mood</span>
+            </div>
+            <div class="sr-pillar">
+              <span class="sr-pillar-dot" style="background:#88C4F0"></span>
+              <span>Sleep</span>
+            </div>
+            <div class="sr-pillar">
+              <span class="sr-pillar-dot" style="background:#F0A8C8"></span>
+              <span>Journal</span>
+            </div>
+            <div class="sr-pillar">
+              <span class="sr-pillar-dot" style="background:#6DD6A0"></span>
+              <span>Habits</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ROW 2 — CONTINUE YOUR JOURNEY + STREAKS
+    ═══════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+      <!-- CONTINUE YOUR JOURNEY -->
+      <div class="col-12 col-lg-7 reveal">
+        <div class="sr-card sr-journey-card">
+          <div class="sr-card-header">
+            <div>
+              <p class="sr-card-eyebrow"><i class="fa-solid fa-robot me-1"></i> AI Recommendation</p>
+              <h2 class="sr-card-title">Continue Your Journey</h2>
+            </div>
+          </div>
+
+          <div class="sr-journey-list" id="journeyList">
+            <a href="{{ url_for('sleep_tracker') }}" class="sr-journey-item active">
+              
+            
+              <div class="sr-journey-icon-wrap" style="background: linear-gradient(135deg,#A593EE,#C566A6)">
+                <i class="fa-solid fa-moon"></i>
+              </div>
+              <div class="sr-journey-info">
+                <strong>Log last night's sleep</strong>
+                <span>You haven't tracked your sleep yet today.</span>
+              </div>
+              <i class="fa-solid fa-arrow-right sr-journey-arrow"></i>
+            </a>
+            <a href="{{ url_for('journal') }}" class="sr-journey-item">
+              <div class="sr-journey-icon-wrap" style="background: linear-gradient(135deg,#6DD6A0,#4DA8A0)">
+                <i class="fa-solid fa-pen-nib"></i>
+              </div>
+              <div class="sr-journey-info">
+                <strong>Write today's journal entry</strong>
+                <span>Even a few sentences can shift your mindset.</span>
+              </div>
+              <i class="fa-solid fa-arrow-right sr-journey-arrow"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- TODAY'S STREAKS -->
+      <div class="col-12 col-lg-5 reveal">
+        <div class="sr-card sr-streaks-card h-100">
+          <p class="sr-card-eyebrow">Keep Going</p>
+          <h2 class="sr-card-title">Today's Streaks</h2>
+
+          <div class="sr-streaks-list">
+            <div class="sr-streak-item">
+              <div class="sr-streak-icon">🔥</div>
+              <div class="sr-streak-info">
+                <strong>Journal Streak</strong>
+                <span>Every word counts</span>
+              </div>
+              <div class="sr-streak-count">
+                <span class="sr-streak-num">{{ journal_streak }}</span>
+                <span class="sr-streak-days">days</span>
+              </div>
+            </div>
+            <div class="sr-streak-item">
+              <div class="sr-streak-icon">🌙</div>
+              <div class="sr-streak-info">
+                <strong>Healthy Sleep</strong>
+                <span>Rest fuels recovery</span>
+              </div>
+              <div class="sr-streak-count">
+                <span class="sr-streak-num">{{ sleep_streak }}</span>
+                <span class="sr-streak-days">days</span>
+              </div>
+            </div>
+            <div class="sr-streak-item">
+              <div class="sr-streak-icon">🌱</div>
+              <div class="sr-streak-info">
+                <strong>Habit Tracker</strong>
+                <span>Small steps, big change</span>
+              </div>
+              <div class="sr-streak-count">
+                <span class="sr-streak-num">{{ habit_streak }}</span>
+                <span class="sr-streak-days">days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ROW 3 — QUICK ACCESS
+    ═══════════════════════════════════════ -->
+    <section class="mb-4 reveal" aria-label="Quick access">
+      <div class="sr-section-label">
+        <p class="sr-card-eyebrow mb-0">Your Toolkit</p>
+        <h2 class="sr-section-title">Quick Access</h2>
+      </div>
+
+      <div class="sr-quick-grid">
+
+        <a href="{{ url_for('journal') }}" class="sr-quick-card" aria-label="Journal">
+          <div class="sr-quick-icon-wrap" style="--qc-color: #A593EE">
+            <span>📖</span>
+          </div>
+          <h3 class="sr-quick-name">Journal</h3>
+          <p class="sr-quick-desc">Write freely, feel lighter.</p>
+          <span class="sr-quick-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{{ url_for('sleep_tracker') }}" class="sr-quick-card" aria-label="Sleep Tracker">
+    <div class="sr-quick-icon-wrap" style="--qc-color: #88C4F0">
+        <span>🌙</span>
+    </div>
+
+    <h3 class="sr-quick-name">Sleep Tracker</h3>
+
+    <p class="sr-quick-desc">
+        {% if today_sleep %}
+       Slept {{ today_sleep }} hrs • {{ today_sleep_quality }}
+    {% else %}
+        Track today's sleep
+    {% endif %}
+
+    </p>
+
+    <span class="sr-quick-arrow">
+        <i class="fa-solid fa-arrow-right"></i>
+    </span>
+</a>
+
+        <a href="{{ url_for('habit_tracker') }}" class="sr-quick-card" aria-label="Habit Tracker">
+          <div class="sr-quick-icon-wrap" style="--qc-color: #6DD6A0">
+            <span>🌱</span>
+          </div>
+          <h3 class="sr-quick-name">Habit Tracker</h3>
+          <p class="sr-quick-desc">Build routines that stick.</p>
+          <span class="sr-quick-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{{ url_for('calm_corner') }}" class="sr-quick-card" aria-label="Calm Corner">
+          <div class="sr-quick-icon-wrap" style="--qc-color: #F0A8C8">
+            <span>🌿</span>
+          </div>
+          <h3 class="sr-quick-name">Calm Corner</h3>
+          <p class="sr-quick-desc">Breathe, relax, reset.</p>
+          <span class="sr-quick-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{{ url_for('ai_companion') }}"class="sr-quick-card" aria-label="AI Companion">
+          <div class="sr-quick-icon-wrap" style="--qc-color: #C566A6">
+            <span>🤖</span>
+          </div>
+          <h3 class="sr-quick-name">AI Companion</h3>
+          <p class="sr-quick-desc">Talk, be heard, feel understood.</p>
+          <span class="sr-quick-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+        <a href="{{ url_for('insights') }}" class="sr-quick-card" aria-label="Insights">
+          <div class="sr-quick-icon-wrap" style="--qc-color: #6BA9D6">
+            <span>📊</span>
+          </div>
+          <h3 class="sr-quick-name">Insights</h3>
+          <p class="sr-quick-desc">See your wellness patterns.</p>
+          <span class="sr-quick-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════
+         DAILY MOTIVATION
+    ═══════════════════════════════════════ -->
+    <section class="mb-4 reveal" aria-label="Daily motivation">
+      <div class="sr-motivation-card">
+        <div class="quote-mark" aria-hidden="true"><i class="fa-solid fa-quote-left"></i></div>
+        <blockquote class="sr-motivation-quote" id="motivationQuote">
+          Small consistent steps create lasting change.
+        </blockquote>
+        <span class="quote-divider" aria-hidden="true"></span>
+        <p class="sr-motivation-credit">Daily Wisdom from Serenity 🌿</p>
+      </div>
+    </section>
+
+  </div><!-- /.container-fluid -->
+</main>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Serenity shared JS -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+
+
+<!-- Dashboard JS -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>
