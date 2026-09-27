@@ -4,3 +4,4 @@ python-dotenv
 mysql-connector-python
 httpx==0.27.2
 itsdangerous==2.2.0
+gunicorn
