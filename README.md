@@ -48,7 +48,7 @@ Serenity is a web-based mental wellness and self-care application designed to he
 ### 🤖 AI Companion
 
 * AI-powered conversational support
-* Local AI integration using Ollama
+* Local AI integration using Groq(earlier ollama)
 * Designed to provide supportive and wellness-oriented interactions
 
 ### 📊 Insights
@@ -84,7 +84,7 @@ Serenity is a web-based mental wellness and self-care application designed to he
 
 ### AI
 
-* Ollama
+* Groq
 * Local AI model integration
 
 ### Other Tools
