@@ -4,12 +4,12 @@ import secrets
 import hashlib
 import traceback
 import smtplib
-import requests
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from datetime import datetime
 from flask_wtf.csrf import CSRFProtect
 from ai_analysis import analyze_journal_with_ai
+from groq_client import groq_chat, AIUnavailable
 
 from flask import (
     Flask,
@@ -263,9 +263,12 @@ def dashboard():
     elif current_hour < 17:
         greeting = "Good afternoon"
         greeting_sub = "Take a moment to check in with yourself."
-    else:
+    elif current_hour < 21:
         greeting = "Good evening"
         greeting_sub = "Slow down, breathe, and give yourself some space."
+    else:
+        greeting = "Good night"
+        greeting_sub = "Rest well, and be gentle with yourself."
 
     # -------------------------
     # DEFAULT VALUES
@@ -2113,23 +2116,10 @@ def send_message():
         messages = cursor.fetchall()
 
         # =================================================
-        # BUILD OLLAMA PROMPT
+        # BUILD GROQ MESSAGES
         # =================================================
 
-        conversation_text = ""
-
-        for msg in messages:
-            if msg["role"] == "user":
-                conversation_text += (
-                    "User: " + msg["content"] + "\n"
-                )
-            else:
-                conversation_text += (
-                    "Serenity: " + msg["content"] + "\n"
-                )
-
-        prompt = f"""
-You are Serenity, a gentle and supportive AI wellness companion.
+        system_prompt = """You are Serenity, a gentle and supportive AI wellness companion.
 
 Your purpose is to provide friendly, empathetic and practical
 supportive conversation.
@@ -2151,34 +2141,23 @@ Important rules:
   you may suggest a suitable activity from Serenity's Calm Corner,
   such as breathing exercises, meditation, relaxation or calming music.
 - If the user is discussing something unrelated to wellness,
-  answer naturally but remain supportive.
+  answer naturally but remain supportive."""
 
-Conversation:
+        groq_messages = [{"role": "system", "content": system_prompt}]
 
-{conversation_text}
-
-Serenity:
-"""
+        # last 20 messages keeps prompts small (the newest user
+        # message was already saved above, so it is included)
+        for msg in messages[-20:]:
+            groq_messages.append({
+                "role": "user" if msg["role"] == "user" else "assistant",
+                "content": msg["content"]
+            })
 
         # =================================================
-        # CALL OLLAMA
+        # CALL GROQ
         # =================================================
 
-        ollama_response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "gemma3:1b",
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=60
-        )
-
-        ollama_response.raise_for_status()
-
-        result = ollama_response.json()
-
-        reply = result.get("response", "").strip()
+        reply = groq_chat(groq_messages, temperature=0.7, max_tokens=400)
 
         if not reply:
 
@@ -2265,16 +2244,16 @@ Serenity:
 
         return jsonify(response_data)
 
-    except requests.exceptions.RequestException as e:
+    except AIUnavailable as e:
 
-        print("OLLAMA ERROR:", e)
+        print("GROQ ERROR:", e)
 
         if connection:
             connection.rollback()
 
         return jsonify({
             "status": "error",
-            "message": "AI Companion is currently unavailable. Please make sure Ollama is running."
+            "message": "AI Companion is currently unavailable. Please try again in a moment."
         }), 503
 
     except Exception as e:

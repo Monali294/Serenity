@@ -2,7 +2,7 @@
    SERENITY AI COMPANION — FRONTEND LOGIC
    Self-contained: theme toggle included, no dependency
    on script.js. Backend-agnostic — works the same whether
-   /send_message is served by Ollama, Groq, or anything
+   /send_message is served by  Groq, or anything
    else, as long as the JSON contract below is met.
 
    -----------------------------------------------------

@@ -1,8 +1,4 @@
-import requests
-
-
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "gemma3:1b"
+from groq_client import groq_chat, AIUnavailable
 
 
 def analyze_journal_with_ai(journal_text):
@@ -62,27 +58,13 @@ Journal entry:
 
 
     try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": MODEL_NAME,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=60
+        ai_response = groq_chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.5,
+            max_tokens=250,
         )
+        return ai_response or None
 
-        response.raise_for_status()
-
-        result = response.json()
-
-        ai_response = result.get("response", "").strip()
-
-        if not ai_response:
-            return None
-
-        return ai_response
-
-    except Exception as e:
+    except AIUnavailable as e:
         print("AI ANALYSIS ERROR:", e)
         return None

@@ -40,9 +40,9 @@ narrative (avoids calling the LLM on every single page view):
 from flask import render_template, request, session, jsonify, redirect, url_for, flash
 from datetime import date, timedelta
 import json
-import requests
 
 from db_config import get_db_connection  # adjust if your helper is named differently
+from groq_client import groq_chat, AIUnavailable
 
 
 # =====================================================
@@ -314,11 +314,8 @@ def check_support_banner(cursor, user_id, today=None):
 
 
 # =====================================================
-# AI NARRATIVE — currently Ollama, swap for Groq at deploy
-# (matches the same /api/generate pattern as your ai_analysis.py)
+# AI NARRATIVE — powered by Groq (see groq_client.py)
 # =====================================================
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "gemma3:1b"
 
 
 def generate_ai_narrative(stats, period_label):
@@ -355,50 +352,16 @@ Write the summary now.
 """
 
     try:
-        response = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False
-            },
-            timeout=30
+        ai_response = groq_chat(
+            [{"role": "user", "content": prompt}],
+            temperature=0.6,
+            max_tokens=300,
         )
-        response.raise_for_status()
+        return ai_response or None
 
-        result = response.json()
-        ai_response = result.get("response", "").strip()
-
-        if not ai_response:
-            return None
-
-        return ai_response
-
-    except Exception as e:
+    except AIUnavailable as e:
         print("INSIGHTS AI NARRATIVE ERROR:", e)
         return None
-
-    # -----------------------------------------------------------------
-    # GROQ VERSION — swap in when deploying (pip install groq):
-    #
-    # import os
-    # from groq import Groq
-    # client = Groq(api_key=os.environ["GROQ_API_KEY"])
-    #
-    # def generate_ai_narrative(stats, period_label):
-    #     ...build prompt_data/prompt same as above...
-    #     try:
-    #         completion = client.chat.completions.create(
-    #             model="llama-3.3-70b-versatile",
-    #             messages=[{"role": "user", "content": prompt}],
-    #             temperature=0.6,
-    #             max_tokens=300,
-    #         )
-    #         return completion.choices[0].message.content.strip()
-    #     except Exception as e:
-    #         print("INSIGHTS AI NARRATIVE ERROR:", e)
-    #         return None
-    # -----------------------------------------------------------------
 
 
 # =====================================================
